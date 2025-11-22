@@ -1,3 +1,6 @@
+#ifndef GRAPH_BUILDER_H
+#define GRAPH_BUILDER_H
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -6,6 +9,7 @@
 #include <cmath>
 #include <algorithm>
 #include <iomanip>
+#include <cstdlib>
 
 // --- ESTRUCTURAS DE DATOS ---
 struct Dataset {
@@ -28,7 +32,7 @@ struct Neighbor {
 // --- FUNCIONES AUXILIARES ---
 
 // Dividir strings (split)
-std::vector<std::string> split(const std::string &s, char delimiter) {
+inline std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream tokenStream(s);
@@ -38,9 +42,9 @@ std::vector<std::string> split(const std::string &s, char delimiter) {
     return tokens;
 }
 
-// Cargar archivo LibSVM (Igual que antes)
-Dataset load_libsvm_file(const std::string& filename, int dim) {
-    std::cout << "Cargando dataset: " << filename << "..." << std::endl;
+// Cargar archivo LibSVM
+inline Dataset load_libsvm_file(const std::string& filename, int dim) {
+    std::cout << "[GraphBuilder] Cargando dataset: " << filename << "..." << std::endl;
     std::ifstream file(filename);
     
     // Si no encuentra el archivo, creamos datos dummy para que NO falle la demo
@@ -76,12 +80,12 @@ Dataset load_libsvm_file(const std::string& filename, int dim) {
         ds.data.insert(ds.data.end(), vec.begin(), vec.end());
     }
     ds.n_points = ds.labels.size();
-    std::cout << "Carga completada: " << ds.n_points << " puntos." << std::endl;
+    std::cout << "[GraphBuilder] Carga completada: " << ds.n_points << " puntos." << std::endl;
     return ds;
 }
 
 // Guardar dataset en binario
-void save_data_binary(const Dataset& ds, const std::string& filename) {
+inline void save_data_binary(const Dataset& ds, const std::string& filename) {
     std::ofstream out(filename, std::ios::binary);
     if (!out) return;
     out.write(reinterpret_cast<const char*>(&ds.n_points), sizeof(int));
@@ -91,9 +95,8 @@ void save_data_binary(const Dataset& ds, const std::string& filename) {
     std::cout << "-> Archivo creado: " << filename << std::endl;
 }
 
-// --- ALGORITMO FUERZA BRUTA (Reemplazo de FAISS) ---
-// Calcula la distancia Euclidiana al cuadrado
-float compute_l2_sq(const float* a, const float* b, int dim) {
+// --- ALGORITMO FUERZA BRUTA ---
+inline float compute_l2_sq(const float* a, const float* b, int dim) {
     float sum = 0.0f;
     for (int i = 0; i < dim; ++i) {
         float diff = a[i] - b[i];
@@ -102,8 +105,8 @@ float compute_l2_sq(const float* a, const float* b, int dim) {
     return sum;
 }
 
-void build_and_save_graph_manual(const Dataset& ds, int K, const std::string& filename) {
-    std::cout << "Construyendo grafo (Algoritmo Manual)... Esto puede tardar un poco." << std::endl;
+inline void build_and_save_graph_manual(const Dataset& ds, int K, const std::string& filename) {
+    std::cout << "[GraphBuilder] Construyendo grafo (Algoritmo Manual)..." << std::endl;
 
     std::ofstream out(filename, std::ios::binary);
     out.write(reinterpret_cast<const char*>(&ds.n_points), sizeof(int));
@@ -112,16 +115,14 @@ void build_and_save_graph_manual(const Dataset& ds, int K, const std::string& fi
     std::vector<int> adj_flat;
     adj_flat.reserve(ds.n_points * K);
 
-    // Para cada punto, buscamos sus K vecinos más cercanos
     for (int i = 0; i < ds.n_points; ++i) {
         std::vector<Neighbor> candidates;
         candidates.reserve(ds.n_points);
 
         const float* vec_i = &ds.data[i * ds.dim];
 
-        // Comparar contra TODOS los otros puntos (Fuerza Bruta O(N^2))
         for (int j = 0; j < ds.n_points; ++j) {
-            if (i == j) continue; // No compararse consigo mismo
+            if (i == j) continue; 
 
             const float* vec_j = &ds.data[j * ds.dim];
             float dist = compute_l2_sq(vec_i, vec_j, ds.dim);
@@ -129,20 +130,16 @@ void build_and_save_graph_manual(const Dataset& ds, int K, const std::string& fi
             candidates.push_back({j, dist});
         }
 
-        // Ordenar para encontrar los menores (los más cercanos)
-        // Usamos partial_sort porque es más rápido que sort completo
         if (candidates.size() > K) {
             std::partial_sort(candidates.begin(), candidates.begin() + K, candidates.end());
         } else {
             std::sort(candidates.begin(), candidates.end());
         }
 
-        // Guardar los índices de los K mejores
         for (int k = 0; k < K && k < candidates.size(); ++k) {
             adj_flat.push_back(candidates[k].id);
         }
 
-        // Barra de progreso simple
         if (i % 100 == 0) std::cout << "\rProcesando nodo " << i << "/" << ds.n_points << std::flush;
     }
     std::cout << std::endl;
@@ -152,13 +149,13 @@ void build_and_save_graph_manual(const Dataset& ds, int K, const std::string& fi
     std::cout << "- Archivo creado: " << filename << std::endl;
 }
 
-int main() {
-    std::cout << "=== GENERADOR DE GRAFO (VERSION STAND-ALONE) ===" << std::endl;
+// Función principal encapsulada para ser llamada desde main.cpp
+inline void runGraphBuilder() {
+    std::cout << "=== GENERADOR DE GRAFO (GraphBuilder) ===" << std::endl;
     
-    // Puedes cambiar esto si tienes el archivo real
     std::string input_file = "letter.scale.t"; 
     int dim = 16;
-    int K = 4; // Grado del grafo (reducido para que sea rápido en la demo)
+    int K = 4; 
 
     // 1. Cargar
     Dataset ds = load_libsvm_file(input_file, dim);
@@ -166,11 +163,10 @@ int main() {
     // 2. Guardar Data
     save_data_binary(ds, "dataset.bin");
 
-    // 3. Construir Grafo (Sin FAISS)
+    // 3. Construir Grafo
     build_and_save_graph_manual(ds, K, "graph_index.bin");
 
-    std::cout << "=== PROCESO TERMINADO CON EXITO ===" << std::endl;
-    std::cout << "Ya se puede usar dataset.bin y graph_index.bin en la simulacion." << std::endl;
-
-    return 0;
+    std::cout << "=== PROCESO DE CONSTRUCCION TERMINADO ===" << std::endl;
 }
+
+#endif
