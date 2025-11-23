@@ -366,12 +366,6 @@ int main(int argc, char** argv) {
     std::vector<int32_t> h_starts(Q);
     for (int i = 0; i < Q; ++i) h_starts[i] = (start_node + i < dataN) ? (start_node + i) : start_node;
 
-    std::cout << "Vecinos de start_node " << start_node << ": ";
-    for(int i = 0; i < graphK; ++i) {
-        std::cout << h_graph[start_node*graphK + i] << " ";
-    }
-    std::cout << "\n";
-
 
     int32_t *d_graph = nullptr; float *d_data = nullptr; int32_t *d_starts = nullptr;
     int32_t *d_out_ids = nullptr; float *d_out_dists = nullptr;
