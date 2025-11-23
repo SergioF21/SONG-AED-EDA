@@ -38,4 +38,13 @@ public:
         }
         return result;
     }
+
+    std::vector<std::pair<int, value_t>> hash2kv(const std::vector<std::pair<int, data_value_t>> &point){
+        std::vector<std::pair<int, value_t>> result;
+        for (int i = 0; i < p*k; i++) {
+            result.emplace_back(i, static_cast<value_t>(hash_matrix[i]));
+        }
+        return result;
+    }
+    
 };

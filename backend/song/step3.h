@@ -7,7 +7,9 @@
 #ifndef STEP3_H
 #define STEP3_H
 #include <string>
-
+#include <vector>
+#include "graph.h"
+#include "structs/sharedMemory.h"
 
 
 void step3(const std::string& graph_file, const std::vector<int>& candidates, const std::vector<int>& distances, int k);
