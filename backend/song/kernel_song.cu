@@ -16,8 +16,8 @@
 #define QUEUE_SIZE 64
 #define THREADS_PER_BLOCK 128
 #define WARP_SIZE 32
-#define TOPK_DEFAULT 8
-
+//#define TOPK_DEFAULT 8  // ahora es variable según input usuario
+ 
 #define CUDA_CHECK(call) do { cudaError_t err = call; if (err != cudaSuccess) { fprintf(stderr,"CUDA ERROR %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); exit(1);} } while(0)
 
 static inline __device__ float warp_reduce_sum(float v) {
@@ -47,6 +47,37 @@ bool read_dataset_bin(const char* path, std::vector<float>& out_data, int &N, in
     f.close();
     return true;
 }
+
+// Helper para escribir JSON para el frontend
+void write_results_json(const char* filename, double time_seconds, int K, int num_queries, 
+                        const std::vector<int32_t>& ids, const std::vector<float>& dists) {
+    std::ofstream out(filename);
+    out << "{\n";
+    out << "  \"execution_time\": " << time_seconds << ",\n";
+    out << "  \"num_queries\": " << num_queries << ",\n";
+    out << "  \"k\": " << K << ",\n";
+    out << "  \"queries\": [\n";
+    
+    for (int q = 0; q < num_queries; ++q) {
+        out << "    {\n";
+        out << "      \"query_id\": " << q << ",\n";
+        out << "      \"results\": [";
+        for (int k = 0; k < K; ++k) {
+            int idx = ids[q * K + k];
+            float d = dists[q * K + k];
+            out << "{\"id\": " << idx << ", \"distance\": " << d << "}";
+            if (k < K - 1) out << ", ";
+        }
+        out << "]\n";
+        out << "    }" << (q < num_queries - 1 ? "," : "") << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    out.close();
+    std::cout << "[JSON] Resultados guardados en " << filename << std::endl;
+}
+
+
 
 
 // ---------------- HELPERS DEVICE ----------------
@@ -323,16 +354,17 @@ __global__ void song_mega_kernel(
 
 // host runner (main)
 int main(int argc, char** argv) {
-    if (argc < 5) {
-        printf("Usage: %s dataset.bin graph_index.bin <start_node> <num_queries>\n", argv[0]);
+    if (argc < 6) {
+        printf("Usage: %s dataset.bin graph_index.bin <start_node> <num_queries> <K>\n", argv[0]);
         return 1;
     }
     const char* dataset_path = argv[1];
     const char* graph_path = argv[2];
     int start_node = atoi(argv[3]);
     int num_queries = atoi(argv[4]);
+    int user_K = atoi(argv[5]); // Nuevo argumento
     if (num_queries < 1) num_queries = 1;
-
+    if (user_K < 1) user_K = 1;
     std::vector<float> h_data;
     int dataN, dataD;
     if (!read_dataset_bin(dataset_path, h_data, dataN, dataD)) {
@@ -349,7 +381,7 @@ int main(int argc, char** argv) {
 
     int graph_degree = graphK;
     int dim = dataD;
-    int TOPK = TOPK_DEFAULT;
+    int TOPK = user_K;  // usamos el k del usuario
     int VISITED_SIZE = 4096;
     int Q_CAP = 4 * TOPK;
 
@@ -423,24 +455,16 @@ int main(int argc, char** argv) {
 
     CUDA_CHECK(cudaDeviceSynchronize());
 
+        // --- RECUPERAR RESULTADOS ---
     std::vector<int32_t> h_out_ids((size_t)Q * TOPK);
     std::vector<float> h_out_dists((size_t)Q * TOPK);
     CUDA_CHECK(cudaMemcpy(h_out_ids.data(), d_out_ids, out_ids_bytes, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaMemcpy(h_out_dists.data(), d_out_dists, out_dists_bytes, cudaMemcpyDeviceToHost));
-
-    for (int q = 0; q < Q; ++q) {
-        printf("Query %d Top-%d results:\n", q, TOPK);
-        for (int k = 0; k < TOPK; ++k) {
-            int idx = h_out_ids[q * TOPK + k];
-            float dist = h_out_dists[q * TOPK + k];
-            if (idx < 0) {
-                printf("  [%d] -\n", k);
-            } else {
-                printf("  [%d] id=%d dist_sq=%.6f\n", k, idx, dist);
-            }
-        }
-    }
-
+    // --- GUARDAR JSON ---
+    // En lugar de imprimir todo a consola, lo guardamos en JSON
+    write_results_json("frontend_results.json", diff.count(), TOPK, Q, h_out_ids, h_out_dists);
+    // Limpieza
     cudaFree(d_graph); cudaFree(d_data); cudaFree(d_starts); cudaFree(d_out_ids); cudaFree(d_out_dists);
     return 0;
+
 }
