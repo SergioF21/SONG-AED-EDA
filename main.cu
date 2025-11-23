@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
-#include "GraphBuilder.h"
-#include "SongStage1_Final.h"
-#include "SongStage2_BulkDistance.h"
+#include "adjacency_graph.h"
+#include "SongStage1.cuh"
+#include "SongStage2.cuh"
 #include "SongStage3.cuh"
 
 int main()
@@ -24,7 +24,8 @@ int main()
     std::cout << "---------------------------------------------\n\n";
 
     // PASO 2: Ejecutar Stage 1 y OBTENER los candidatos reales
-    std::vector<int> candidatos_stage1 = runSongSimulation();
+    std::vector<int> candidatos_stage1 = load_graph_bin("graph_index.bin", /*n_points*/ *(new int));
+    process_stage1("dataset.bin", candidatos_stage1);
 
     std::cout << "\n---------------------------------------------\n";
     std::cout << "   Stage 1 completada. Iniciando Stage 2... " << std::endl;

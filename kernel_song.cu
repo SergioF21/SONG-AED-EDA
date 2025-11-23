@@ -14,7 +14,7 @@
 #define QUEUE_SIZE 64
 #define THREADS_PER_BLOCK 128
 #define WARP_SIZE 32
-#define TOPK_DEFAULT 10
+#define TOPK_DEFAULT 8
 
 #define CUDA_CHECK(call) do { cudaError_t err = call; if (err != cudaSuccess) { fprintf(stderr,"CUDA ERROR %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); exit(1);} } while(0)
 
@@ -45,6 +45,66 @@ bool read_dataset_bin(const char* path, std::vector<float>& out_data, int &N, in
     f.close();
     return true;
 }
+
+
+// ---------------- HELPERS DEVICE ----------------
+
+// Inserta id en tabla visited con linear probing y atomicCAS.
+// Devuelve true si insertó (o ya presente), false si tabla llena.
+__device__ bool visited_insert(int *visited_table, int table_size, int id) {
+    if (id < 0) return false;
+    unsigned int h = (unsigned int)id;
+    unsigned int idx = h & (table_size - 1); // table_size debe ser potencia de 2 para esto
+    for (int probe = 0; probe < table_size; ++probe) {
+        int cur = atomicCAS(&visited_table[idx], -1, id);
+        if (cur == -1) {
+            // inserted (slot was empty)
+            return true;
+        }
+        if (cur == id) {
+            // already present
+            return true;
+        }
+        // else continue probing
+        idx = (idx + 1) & (table_size - 1);
+    }
+    // table full / can't insert
+    return false;
+}
+
+// Comprueba si id está en visited (no usa atomics: lectura eventual consistente)
+__device__ bool visited_contains(int *visited_table, int table_size, int id) {
+    if (id < 0) return false;
+    unsigned int h = (unsigned int)id;
+    unsigned int idx = h & (table_size - 1);
+    for (int probe = 0; probe < table_size; ++probe) {
+        int cur = visited_table[idx];
+        if (cur == -1) return false; // empty -> not found
+        if (cur == id) return true;
+        idx = (idx + 1) & (table_size - 1);
+    }
+    return false;
+}
+
+// Elimina id de visited (marca tombstone = -2). Devuelve true si eliminado.
+__device__ bool visited_remove(int *visited_table, int table_size, int id) {
+    if (id < 0) return false;
+    unsigned int h = (unsigned int)id;
+    unsigned int idx = h & (table_size - 1);
+    for (int probe = 0; probe < table_size; ++probe) {
+        int cur = visited_table[idx];
+        if (cur == -1) return false; // not found
+        if (cur == id) {
+            // attempt to replace id -> tombstone (-2)
+            int prev = atomicCAS(&visited_table[idx], id, -2);
+            return (prev == id);
+        }
+        idx = (idx + 1) & (table_size - 1);
+    }
+    return false;
+}
+
+// ---------------- KERNEL ----------------
 
 extern "C"
 __global__ void song_mega_kernel(
@@ -104,14 +164,7 @@ __global__ void song_mega_kernel(
         for (int i=0;i<TOPK;i++) { s_topk_ids[i] = -1; s_topk_dists[i] = 1e30f; }
         for (int i=0;i<VISITED_SIZE;i++) s_visited[i] = -1;
         s_q_ids[0] = start_node; s_q_dists[0] = 1e30f; *s_q_size = 1;
-        int h = (start_node * 2654435761u) & (VISITED_SIZE - 1);
-        int p = 0;
-        while (p < VISITED_SIZE) {
-            int idx = (h + p) & (VISITED_SIZE - 1);
-            int32_t old = atomicCAS(&s_visited[idx], -1, start_node);
-            if (old == -1 || old == start_node) break;
-            p++;
-        }
+        visited_insert(s_visited, VISITED_SIZE, start_node);
     }
     __syncthreads();
 
@@ -139,27 +192,11 @@ __global__ void song_mega_kernel(
                 for (int j=0;j<graph_degree;j++) {
                     int32_t v = d_graph[base + j];
                     if (v < 0) continue;
-                    int h = (v * 2654435761u) & (VISITED_SIZE - 1);
-                    bool seen = false;
-                    int probe = 0;
-                    while (probe < VISITED_SIZE) {
-                        int idx = (h + probe) & (VISITED_SIZE - 1);
-                        int32_t val = s_visited[idx];
-                        if (val == -1) break;
-                        if (val == v) { seen = true; break; }
-                        probe++;
-                    }
-                    if (!seen && ccount < graph_degree) {
+                    if (!visited_contains(s_visited, VISITED_SIZE, v) && ccount < graph_degree) {
                         s_candidates[ccount] = v;
                         s_cand_dist[ccount] = 1e30f;
+                        visited_insert(s_visited, VISITED_SIZE, v);
                         ccount++;
-                        probe = 0;
-                        while (probe < VISITED_SIZE) {
-                            int idx = (h + probe) & (VISITED_SIZE - 1);
-                            int32_t old = atomicCAS(&s_visited[idx], -1, v);
-                            if (old == -1 || old == v) break;
-                            probe++;
-                        }
                     }
                 }
                 *s_candidate_count = ccount;
@@ -185,93 +222,73 @@ __global__ void song_mega_kernel(
         }
         __syncthreads();
 
+         // ---------------- Stage 3: Data Structure Maintenance  ----------------
         if (tid == 0) {
-            int now = *s_now_idx;
-            for (int c = 0; c < candidate_count; ++c) {
-                int vid = s_candidates[c];
-                float dval = s_cand_dist[c];
-                bool skip = false;
-                if (*s_topk_size == TOPK) {
-                    float worst = -1.0f; int worst_pos = -1;
-                    for (int t=0;t<TOPK;t++) {
-                        if (s_topk_ids[t] == -1) continue;
-                        if (s_topk_dists[t] > worst) { worst = s_topk_dists[t]; worst_pos = t; }
-                    }
-                    if (worst_pos >= 0 && dval >= worst) skip = true;
+            for (int i = 0; i < candidate_count; ++i) {
+                int cand = s_candidates[i];
+                float dist = s_cand_dist[i];
+
+                if (cand < 0) continue;
+
+                // Selected insertion: compare con el peor (último) en topk (topk_dists sorted asc)
+                float worst_dist = s_topk_dists[TOPK - 1];
+                if (!(dist < worst_dist)) {
+                    // peor o igual -> ignorar (no marcar visited)
+                    continue;
                 }
-                if (skip) continue;
-                int qsz = *s_q_size;
-                if (qsz < Q_CAP) {
-                    s_q_ids[qsz] = vid;
-                    s_q_dists[qsz] = dval;
-                    (*s_q_size)++;
+
+                // Encontrar posición de inserción
+                int insert_pos = TOPK;
+                for (int p = 0; p < TOPK; ++p) {
+                    if (dist < s_topk_dists[p]) { insert_pos = p; break; }
+                }
+
+                int evicted_node = -1;
+                if (insert_pos < TOPK) {
+                    // Guardar el id que será expulsado (el último antes del shift)
+                    evicted_node = s_topk_ids[TOPK - 1];
+
+                    // Shift para hacer espacio (de derecha a izquierda)
+                    for (int s = TOPK - 1; s > insert_pos; --s) {
+                        s_topk_dists[s] = s_topk_dists[s - 1];
+                        s_topk_ids[s] = s_topk_ids[s - 1];
+                    }
+                    // Insertar nuevo elemento en insert_pos
+                    s_topk_dists[insert_pos] = dist;
+                    s_topk_ids[insert_pos] = cand;
+                    if (*s_topk_size < TOPK) {
+                        (*s_topk_size)++;
+                    }
+                }
+
+                // Insertar en Q (bounded)
+                int q_idx = atomicAdd(s_q_size, 1);
+                if (q_idx < Q_CAP) {
+                    s_q_ids[q_idx] = cand;
+                    s_q_dists[q_idx] = dist;
                 } else {
-                    float worstq = -1.0f; int worstqpos = -1;
-                    for (int i=0;i<Q_CAP;i++) {
-                        if (s_q_ids[i] == -1) continue;
-                        if (s_q_dists[i] > worstq) { worstq = s_q_dists[i]; worstqpos = i; }
-                    }
-                    if (worstqpos >= 0 && dval < worstq) {
-                        int ev = s_q_ids[worstqpos];
-                        s_q_ids[worstqpos] = vid;
-                        s_q_dists[worstqpos] = dval;
-                        if (ev >= 0) {
-                            int h = (ev * 2654435761u) & (VISITED_SIZE - 1);
-                            int probe = 0;
-                            while (probe < VISITED_SIZE) {
-                                int idx = (h + probe) & (VISITED_SIZE - 1);
-                                int32_t val = s_visited[idx];
-                                if (val == ev) { s_visited[idx] = -1; break; }
-                                if (val == -1) break;
-                                probe++;
-                            }
-                        }
-                    } else {
-                        continue;
-                    }
+                    // revertir incremento y descartar candidato
+                    atomicAdd(s_q_size, -1);
+                    // opcional: podrías intentar insertar en topk aun si Q overflow; omitimos.
+                    // Si hicimos inserción en topk, y hubo eviction, revertir topk? dejamos como está.
+                    continue;
                 }
-                if (*s_topk_size < TOPK) {
-                    int pos = *s_topk_size;
-                    s_topk_ids[pos] = vid;
-                    s_topk_dists[pos] = dval;
-                    (*s_topk_size)++;
-                } else {
-                    float worst = -1.0f; int worst_pos = -1;
-                    for (int t=0;t<TOPK;t++) {
-                        if (s_topk_dists[t] > worst) { worst = s_topk_dists[t]; worst_pos = t; }
-                    }
-                    if (worst_pos >= 0 && dval < worst) {
-                        int ev = s_topk_ids[worst_pos];
-                        s_topk_ids[worst_pos] = vid;
-                        s_topk_dists[worst_pos] = dval;
-                        int h = (ev * 2654435761u) & (VISITED_SIZE - 1);
-                        int probe = 0;
-                        while (probe < VISITED_SIZE) {
-                            int idx = (h + probe) & (VISITED_SIZE - 1);
-                            int32_t val = s_visited[idx];
-                            if (val == ev) { s_visited[idx] = -1; break; }
-                            if (val == -1) break;
-                            probe++;
-                        }
-                    }
+/*
+                // Insertar en visited (si no estaba)
+                bool vinserted = visited_insert(s_visited, VISITED_SIZE, cand);
+                (void)vinserted;
+*/
+                // Si hubo evicted_node válido y distinto de -1, eliminarlo de visited.
+                // Esto mantiene la invariante visited ⊆ (Q ∪ topK).
+                if (evicted_node >= 0) {
+                    // intentamos remover; visited_remove usa atomicCAS así que es seguro.
+                    visited_remove(s_visited, VISITED_SIZE, evicted_node);
                 }
-            }
-            if (now >= 0) {
-                bool found = false;
-                for (int t=0;t<*s_topk_size;t++) if (s_topk_ids[t] == now) { found = true; break; }
-                if (!found) {
-                    int h = (now * 2654435761u) & (VISITED_SIZE - 1);
-                    int probe = 0;
-                    while (probe < VISITED_SIZE) {
-                        int idx = (h + probe) & (VISITED_SIZE - 1);
-                        int32_t val = s_visited[idx];
-                        if (val == now) { s_visited[idx] = -1; break; }
-                        if (val == -1) break;
-                        probe++;
-                    }
-                }
-            }
-        }
+
+                // Incrementar contador de procesados
+                //atomicAdd(s_candidate_count, 1);
+            } // for candidates
+        } // if thread 0
         __syncthreads();
 
         if (tid == 0) {
@@ -325,19 +342,36 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Failed to read graph: %s\n", graph_path); return 1;
     }
 
+    printf("Dataset: N=%d, D=%d\n", dataN, dataD);
+    printf("Graph: N=%d, DEGREE=%d\n", graphN, graphK);
+
     int graph_degree = graphK;
     int dim = dataD;
     int TOPK = TOPK_DEFAULT;
-    int VISITED_SIZE = 64;
+    int VISITED_SIZE = 4096;
     int Q_CAP = 4 * TOPK;
 
     int vsz = 1;
     while (vsz < 4*TOPK) vsz <<= 1;
     VISITED_SIZE = vsz;
 
+
+    std::cout << "Vecinos de start_node " << start_node << ": ";
+    for(int i = 0; i < graphK; ++i) {
+        std::cout << h_graph[start_node*graphK + i] << " ";
+    }
+    std::cout << "\n";
+
     int Q = num_queries;
     std::vector<int32_t> h_starts(Q);
     for (int i = 0; i < Q; ++i) h_starts[i] = (start_node + i < dataN) ? (start_node + i) : start_node;
+
+    std::cout << "Vecinos de start_node " << start_node << ": ";
+    for(int i = 0; i < graphK; ++i) {
+        std::cout << h_graph[start_node*graphK + i] << " ";
+    }
+    std::cout << "\n";
+
 
     int32_t *d_graph = nullptr; float *d_data = nullptr; int32_t *d_starts = nullptr;
     int32_t *d_out_ids = nullptr; float *d_out_dists = nullptr;
@@ -371,6 +405,9 @@ int main(int argc, char** argv) {
     shared_size += sizeof(int32_t) * VISITED_SIZE;
     shared_size += sizeof(int) * 1;
     shared_size += sizeof(int) * 1;
+
+    // launch kernel
+    printf("Launching kernel: blocks=%d threads=%d shared=%.2f KB\n", Q, THREADS_PER_BLOCK, shared_size / 1024.0f);
 
     dim3 grid(Q); dim3 block(THREADS_PER_BLOCK);
     song_mega_kernel<<<grid, block, shared_size>>>(
