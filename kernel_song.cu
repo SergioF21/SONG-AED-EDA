@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <ctime>
+#include <chrono>
 
 #define DEGREE_LIMIT 4
 #define HASH_SIZE 32
@@ -404,6 +406,8 @@ int main(int argc, char** argv) {
     printf("Launching kernel: blocks=%d threads=%d shared=%.2f KB\n", Q, THREADS_PER_BLOCK, shared_size / 1024.0f);
 
     dim3 grid(Q); dim3 block(THREADS_PER_BLOCK);
+    
+    auto start = std::chrono::high_resolution_clock::now();
     song_mega_kernel<<<grid, block, shared_size>>>(
         d_graph, d_data, d_starts,
         dataN, graph_degree, dim,
@@ -411,6 +415,12 @@ int main(int argc, char** argv) {
         TOPK, VISITED_SIZE, Q_CAP,
         d_out_ids, d_out_dists
     );
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> diff = end - start;
+
+    std::cout << "[INFO] Tiempo de ejecución de SONG para " << Q << " consultas: " << diff.count() << " segundos." << std::endl;
+
     CUDA_CHECK(cudaDeviceSynchronize());
 
     std::vector<int32_t> h_out_ids((size_t)Q * TOPK);
