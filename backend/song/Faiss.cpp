@@ -175,7 +175,7 @@ inline void build_and_save_graph_faiss(const Dataset& ds, int K, const std::stri
 inline void runGraphBuilder() {
     std::cout << "=== GENERADOR DE GRAFO (GraphBuilder + FAISS) ===" << std::endl;
     
-    std::string input_file = "letter.scale"; 
+    std::string input_file = "datasets/letter.scale"; 
     int dim = 16;
     int K = 16;
 
