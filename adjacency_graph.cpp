@@ -142,7 +142,7 @@ inline void runGraphBuilder() {
     
     std::string input_file = "letter.scale"; 
     int dim = 16;
-    int K = 4;
+    int K = 8;
 
     Dataset ds = load_libsvm_file(input_file, dim);
 

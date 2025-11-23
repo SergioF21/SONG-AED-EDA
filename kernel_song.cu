@@ -51,7 +51,7 @@ bool read_dataset_bin(const char* path, std::vector<float>& out_data, int &N, in
 
 // Inserta id en tabla visited con linear probing y atomicCAS.
 // Devuelve true si insertó (o ya presente), false si tabla llena.
-__device__ bool visited_insert(int *visited_table, int table_size, int id) {
+__device__ bool visited_insert(int32_t *visited_table, int table_size, int id) {
     if (id < 0) return false;
     unsigned int h = (unsigned int)id;
     unsigned int idx = h & (table_size - 1); // table_size debe ser potencia de 2 para esto
@@ -73,7 +73,7 @@ __device__ bool visited_insert(int *visited_table, int table_size, int id) {
 }
 
 // Comprueba si id está en visited (no usa atomics: lectura eventual consistente)
-__device__ bool visited_contains(int *visited_table, int table_size, int id) {
+__device__ bool visited_contains(int32_t *visited_table, int table_size, int id) {
     if (id < 0) return false;
     unsigned int h = (unsigned int)id;
     unsigned int idx = h & (table_size - 1);
@@ -87,7 +87,7 @@ __device__ bool visited_contains(int *visited_table, int table_size, int id) {
 }
 
 // Elimina id de visited (marca tombstone = -2). Devuelve true si eliminado.
-__device__ bool visited_remove(int *visited_table, int table_size, int id) {
+__device__ bool visited_remove(int32_t *visited_table, int table_size, int id) {
     if (id < 0) return false;
     unsigned int h = (unsigned int)id;
     unsigned int idx = h & (table_size - 1);
