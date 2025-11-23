@@ -5,7 +5,7 @@
 // CONFIGURACIÓN (fuera de extern "C")
 // --------------------------------------------------------
 constexpr int MAX_Q_CAPACITY = 1024;
-constexpr int = 8;
+constexpr int TOPK_K = 8;
 constexpr int VISITED_CAPACITY = 4096;
 
 // --------------------------------------------------------
