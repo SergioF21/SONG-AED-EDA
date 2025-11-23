@@ -48,6 +48,7 @@ exe_ext = ".exe" if is_windows else ""
 # Nombres base
 SONG_EXE_NAME = "song" + exe_ext
 FAISS_EXE_NAME = "faiss_demo" + exe_ext
+GRAPH_BUILDER_EXE_NAME = "GraphBuilder" + exe_ext
 
 # Rutas relativas (ajusta si tu estructura de carpetas es diferente)
 # Asumimos que app.py está en /frontend y los ejecutables en ../backend/song/
@@ -55,6 +56,7 @@ BASE_BACKEND_DIR = os.path.join("..", "backend", "song")
 
 PATH_SONG = os.path.join(BASE_BACKEND_DIR, SONG_EXE_NAME)
 PATH_FAISS = os.path.join(BASE_BACKEND_DIR, FAISS_EXE_NAME)
+PATH_GRAPH_BUILDER = os.path.join(BASE_BACKEND_DIR, GRAPH_BUILDER_EXE_NAME)
 
 DATASET_BIN = os.path.join(BASE_BACKEND_DIR, "dataset.bin")
 # FAISS suele usar el mismo dataset, o uno específico si lo generaste aparte
@@ -89,10 +91,13 @@ if st.sidebar.button("🚀 Ejecutar Benchmark", type="primary"):
     # 1. SONG (GPU)
     status.info(f"🔵 Ejecutando SONG (GPU)... K={k_value}, Q={num_queries}")
     # Argumentos: ./song dataset graph start Q K
+    #  
+    cmd_make_graph = [PATH_GRAPH_BUILDER, "16", str(k_value)] 
     cmd_song = [PATH_SONG, DATASET_BIN, GRAPH_BIN, str(start_node), str(num_queries), str(k_value)]
     
     try:
         # cwd="." para que el JSON se genere en la carpeta actual
+        res_make_graph = subprocess.run(cmd_make_graph, capture_output=True, text=True, cwd=".")
         res_song = subprocess.run(cmd_song, capture_output=True, text=True, cwd=".")
         if res_song.returncode != 0:
             st.error("Error en SONG:")
