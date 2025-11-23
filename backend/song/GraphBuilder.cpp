@@ -150,12 +150,18 @@ inline void build_and_save_graph_manual(const Dataset& ds, int K, const std::str
 }
 
 // Función principal encapsulada para ser llamada desde main.cpp
-inline void runGraphBuilder() {
+inline void runGraphBuilder(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "Uso: " << argv[0] << " <input_libsvm_file> [dim] [K]" << std::endl;
+        return;
+    }
+
+
     std::cout << "=== GENERADOR DE GRAFO (GraphBuilder) ===" << std::endl;
     
-    std::string input_file = "letter.scale"; 
-    int dim = 16;
-    int K = 16; 
+    std::string input_file = "" + std::string(argv[1]); 
+    int dim = std::stoi(argv[2]);
+    int K = std::stoi(argv[3]); 
 
     // 1. Cargar
     Dataset ds = load_libsvm_file(input_file, dim);
@@ -170,7 +176,7 @@ inline void runGraphBuilder() {
 }
 
 #endif
-int main(){
-    runGraphBuilder();
+int main(int argc, char** argv) {
+    runGraphBuilder(argc, argv);
     return 0;
 }   
