@@ -2,7 +2,7 @@
 #include <vector>
 #include "adjacency_graph.h"
 #include "SongStage1.cuh"
-#include "SongStage2.cuh"
+#include "SongStage2.cu"
 #include "SongStage3.cuh"
 
 int main()
