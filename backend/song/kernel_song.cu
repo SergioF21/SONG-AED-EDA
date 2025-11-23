@@ -363,17 +363,19 @@ int main(int argc, char** argv) {
     int start_node = atoi(argv[3]);
     int num_queries = atoi(argv[4]);
     int user_K = atoi(argv[5]); // Nuevo argumento
+
     if (num_queries < 1) num_queries = 1;
     if (user_K < 1) user_K = 1;
+    
     std::vector<float> h_data;
     int dataN, dataD;
     if (!read_dataset_bin(dataset_path, h_data, dataN, dataD)) {
-        fprintf(stderr, "Failed to read dataset: %s\n", dataset_path); return 1;
+        fprintf(stderr, "Error leyendo dataset: %s\n", dataset_path); return 1;
     }
     std::vector<int32_t> h_graph;
     int graphN, graphK;
     if (!read_graph_bin(graph_path, h_graph, graphN, graphK)) {
-        fprintf(stderr, "Failed to read graph: %s\n", graph_path); return 1;
+        fprintf(stderr, "Error leyendo grafo: %s\n", graph_path); return 1;
     }
 
     printf("Dataset: N=%d, D=%d\n", dataN, dataD);

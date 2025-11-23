@@ -1,0 +1,71 @@
+{
+  "execution_time": 0.000231177,
+  "num_queries": 16,
+  "k": 16,
+  "queries": [
+    {
+      "query_id": 0,
+      "results": [{"id": 3444, "distance": 0.0355556}, {"id": 5307, "distance": 0.0355556}, {"id": 11236, "distance": 0.0533332}, {"id": 2357, "distance": 0.0711109}, {"id": 7232, "distance": 0.0711112}, {"id": 8436, "distance": 0.0711112}, {"id": 12884, "distance": 0.0711112}, {"id": 12437, "distance": 0.088889}, {"id": 9043, "distance": 0.106667}, {"id": 3762, "distance": 0.142223}, {"id": 6678, "distance": 0.16}, {"id": 3384, "distance": 0.177778}, {"id": 4418, "distance": 0.213334}, {"id": 4143, "distance": 0.266666}, {"id": 1908, "distance": 0.266667}, {"id": 11879, "distance": 0.266667}]
+    },
+    {
+      "query_id": 1,
+      "results": [{"id": 8315, "distance": 0.0177777}, {"id": 0, "distance": 0.017778}, {"id": 214, "distance": 0.0355555}, {"id": 11248, "distance": 0.0355556}, {"id": 445, "distance": 0.0355557}, {"id": 8733, "distance": 0.0355559}, {"id": 14250, "distance": 0.0533337}, {"id": 9554, "distance": 0.0711114}, {"id": 3844, "distance": 0.0888888}, {"id": 2741, "distance": 0.088889}, {"id": 8667, "distance": 0.088889}, {"id": 1759, "distance": 0.0888892}, {"id": 1597, "distance": 0.0888892}, {"id": 3406, "distance": 0.106667}, {"id": 2536, "distance": 0.106667}, {"id": 2355, "distance": 0.124444}]
+    },
+    {
+      "query_id": 2,
+      "results": [{"id": 4016, "distance": 0.0711111}, {"id": 10943, "distance": 0.106667}, {"id": 4021, "distance": 0.124444}, {"id": 12284, "distance": 0.124444}, {"id": 9457, "distance": 0.124444}, {"id": 11055, "distance": 0.16}, {"id": 657, "distance": 0.16}, {"id": 13145, "distance": 0.16}, {"id": 4081, "distance": 0.177778}, {"id": 9447, "distance": 0.177778}, {"id": 4943, "distance": 0.177778}, {"id": 903, "distance": 0.177778}, {"id": 9781, "distance": 0.177778}, {"id": 4383, "distance": 0.195555}, {"id": 13042, "distance": 0.195555}, {"id": 764, "distance": 0.195556}]
+    },
+    {
+      "query_id": 3,
+      "results": [{"id": 6607, "distance": 0.0711113}, {"id": 8609, "distance": 0.124445}, {"id": 2709, "distance": 0.142222}, {"id": 14170, "distance": 0.142222}, {"id": 11492, "distance": 0.142223}, {"id": 2436, "distance": 0.16}, {"id": 11652, "distance": 0.16}, {"id": 11251, "distance": 0.177778}, {"id": 4648, "distance": 0.177778}, {"id": 10121, "distance": 0.177778}, {"id": 11713, "distance": 0.195555}, {"id": 9298, "distance": 0.195556}, {"id": 9071, "distance": 0.195556}, {"id": 9936, "distance": 0.195556}, {"id": 9871, "distance": 0.195556}, {"id": 6524, "distance": 0.213333}]
+    },
+    {
+      "query_id": 4,
+      "results": [{"id": 6731, "distance": 0.0355554}, {"id": 6805, "distance": 0.0888887}, {"id": 14532, "distance": 0.106666}, {"id": 5037, "distance": 0.124444}, {"id": 4670, "distance": 0.124445}, {"id": 3620, "distance": 0.16}, {"id": 198, "distance": 0.16}, {"id": 4514, "distance": 0.16}, {"id": 4993, "distance": 0.177778}, {"id": 7999, "distance": 0.195555}, {"id": 6814, "distance": 0.195556}, {"id": 12354, "distance": 0.213333}, {"id": 12231, "distance": 0.213333}, {"id": 7237, "distance": 0.231111}, {"id": 9999, "distance": 0.231111}, {"id": 11854, "distance": 0.231112}]
+    },
+    {
+      "query_id": 5,
+      "results": [{"id": 5460, "distance": 0.0533331}, {"id": 7422, "distance": 0.0533331}, {"id": 1077, "distance": 0.0711108}, {"id": 9686, "distance": 0.0711108}, {"id": 14733, "distance": 0.071111}, {"id": 14687, "distance": 0.0888885}, {"id": 14853, "distance": 0.0888886}, {"id": 6876, "distance": 0.0888888}, {"id": 850, "distance": 0.106666}, {"id": 14979, "distance": 0.106666}, {"id": 2487, "distance": 0.106666}, {"id": 11390, "distance": 0.106666}, {"id": 12661, "distance": 0.106666}, {"id": 12855, "distance": 0.106666}, {"id": 8222, "distance": 0.106666}, {"id": 6048, "distance": 0.106666}]
+    },
+    {
+      "query_id": 6,
+      "results": [{"id": 2231, "distance": 0}, {"id": 4160, "distance": 0}, {"id": 6202, "distance": 0}, {"id": 1504, "distance": 0.0355556}, {"id": 8697, "distance": 0.0355556}, {"id": 1378, "distance": 0.0533331}, {"id": 3343, "distance": 0.0533331}, {"id": 3722, "distance": 0.0533331}, {"id": 5733, "distance": 0.0533332}, {"id": 2873, "distance": 0.0533333}, {"id": 5609, "distance": 0.0533333}, {"id": 7512, "distance": 0.0533333}, {"id": 12251, "distance": 0.0533333}, {"id": 2782, "distance": 0.0711109}, {"id": 8953, "distance": 0.0711109}, {"id": 10858, "distance": 0.0711109}]
+    },
+    {
+      "query_id": 7,
+      "results": [{"id": 6176, "distance": 0.0177779}, {"id": 13409, "distance": 0.0533334}, {"id": 7353, "distance": 0.0533334}, {"id": 3758, "distance": 0.0533335}, {"id": 5092, "distance": 0.0711111}, {"id": 11258, "distance": 0.0711112}, {"id": 7150, "distance": 0.0711113}, {"id": 13620, "distance": 0.0711113}, {"id": 6343, "distance": 0.0711113}, {"id": 1832, "distance": 0.0888891}, {"id": 704, "distance": 0.0888892}, {"id": 143, "distance": 0.0888892}, {"id": 2335, "distance": 0.0888892}, {"id": 408, "distance": 0.106666}, {"id": 4193, "distance": 0.106667}, {"id": 3309, "distance": 0.106667}]
+    },
+    {
+      "query_id": 8,
+      "results": [{"id": 5114, "distance": 0.124444}, {"id": 14364, "distance": 0.248888}, {"id": 4803, "distance": 0.284444}, {"id": 12183, "distance": 0.32}, {"id": 7747, "distance": 0.32}, {"id": 777, "distance": 0.337778}, {"id": 3881, "distance": 0.373334}, {"id": 10018, "distance": 0.391111}, {"id": 4844, "distance": 0.408889}, {"id": 14430, "distance": 0.426666}, {"id": 2339, "distance": 0.426666}, {"id": 7959, "distance": 0.444444}, {"id": 9187, "distance": 0.444445}, {"id": 11513, "distance": 0.444445}, {"id": 6807, "distance": 0.444445}, {"id": 14901, "distance": 0.444445}]
+    },
+    {
+      "query_id": 9,
+      "results": [{"id": 66, "distance": 0.248888}, {"id": 4510, "distance": 0.248889}, {"id": 9831, "distance": 0.248889}, {"id": 10852, "distance": 0.266667}, {"id": 13049, "distance": 0.302221}, {"id": 10974, "distance": 0.32}, {"id": 6894, "distance": 0.337778}, {"id": 6565, "distance": 0.355555}, {"id": 1554, "distance": 0.391111}, {"id": 12071, "distance": 0.391111}, {"id": 8043, "distance": 0.444444}, {"id": 10185, "distance": 0.48}, {"id": 2385, "distance": 0.48}, {"id": 8012, "distance": 0.497777}, {"id": 11719, "distance": 0.515556}, {"id": 14262, "distance": 0.551112}]
+    },
+    {
+      "query_id": 10,
+      "results": [{"id": 10388, "distance": 0.0888889}, {"id": 13531, "distance": 0.0888892}, {"id": 11082, "distance": 0.106667}, {"id": 2885, "distance": 0.106667}, {"id": 11970, "distance": 0.124445}, {"id": 14520, "distance": 0.124445}, {"id": 11223, "distance": 0.124445}, {"id": 1829, "distance": 0.142222}, {"id": 4229, "distance": 0.16}, {"id": 7697, "distance": 0.177778}, {"id": 14215, "distance": 0.177778}, {"id": 6625, "distance": 0.177779}, {"id": 14358, "distance": 0.195555}, {"id": 734, "distance": 0.195556}, {"id": 11339, "distance": 0.195556}, {"id": 7585, "distance": 0.195556}]
+    },
+    {
+      "query_id": 11,
+      "results": [{"id": 3157, "distance": 0}, {"id": 8831, "distance": 0}, {"id": 10997, "distance": 0}, {"id": 7464, "distance": 0.0177777}, {"id": 12097, "distance": 0.0355554}, {"id": 7350, "distance": 0.0355556}, {"id": 8910, "distance": 0.0355557}, {"id": 5119, "distance": 0.0355557}, {"id": 6014, "distance": 0.0533331}, {"id": 4504, "distance": 0.0533333}, {"id": 1650, "distance": 0.0533333}, {"id": 992, "distance": 0.0533333}, {"id": 4072, "distance": 0.0711111}, {"id": 9910, "distance": 0.0711111}, {"id": 1376, "distance": 0.0711113}, {"id": 6318, "distance": 0.0711113}]
+    },
+    {
+      "query_id": 12,
+      "results": [{"id": 9879, "distance": 0.0888888}, {"id": 2305, "distance": 0.124444}, {"id": 12095, "distance": 0.124445}, {"id": 8929, "distance": 0.142222}, {"id": 14629, "distance": 0.177777}, {"id": 4671, "distance": 0.195555}, {"id": 5891, "distance": 0.195555}, {"id": 11920, "distance": 0.195556}, {"id": 7544, "distance": 0.195556}, {"id": 9730, "distance": 0.213333}, {"id": 11460, "distance": 0.213333}, {"id": 12476, "distance": 0.213333}, {"id": 14760, "distance": 0.213333}, {"id": 1523, "distance": 0.231111}, {"id": 1661, "distance": 0.231111}, {"id": 14336, "distance": 0.231111}]
+    },
+    {
+      "query_id": 13,
+      "results": [{"id": 1843, "distance": 0.0177777}, {"id": 12910, "distance": 0.0355554}, {"id": 5355, "distance": 0.0711111}, {"id": 13083, "distance": 0.0711115}, {"id": 3935, "distance": 0.0888888}, {"id": 13914, "distance": 0.0888894}, {"id": 13637, "distance": 0.106667}, {"id": 4474, "distance": 0.124445}, {"id": 13759, "distance": 0.124445}, {"id": 2769, "distance": 0.16}, {"id": 2922, "distance": 0.16}, {"id": 203, "distance": 0.16}, {"id": 12866, "distance": 0.160001}, {"id": 4924, "distance": 0.231111}, {"id": 1287, "distance": 0.248889}, {"id": 10119, "distance": 0.248889}]
+    },
+    {
+      "query_id": 14,
+      "results": [{"id": 2311, "distance": 0.0888887}, {"id": 11776, "distance": 0.0888888}, {"id": 10180, "distance": 0.106667}, {"id": 596, "distance": 0.106667}, {"id": 12317, "distance": 0.106667}, {"id": 14161, "distance": 0.142222}, {"id": 6082, "distance": 0.142222}, {"id": 12357, "distance": 0.142222}, {"id": 13792, "distance": 0.142223}, {"id": 12807, "distance": 0.159999}, {"id": 14942, "distance": 0.16}, {"id": 1262, "distance": 0.16}, {"id": 14072, "distance": 0.16}, {"id": 2371, "distance": 0.177777}, {"id": 2523, "distance": 0.177778}, {"id": 3299, "distance": 0.177778}]
+    },
+    {
+      "query_id": 15,
+      "results": [{"id": 3951, "distance": 0}, {"id": 2530, "distance": 0.0177777}, {"id": 6596, "distance": 0.0355554}, {"id": 7445, "distance": 0.0355554}, {"id": 3367, "distance": 0.0355559}, {"id": 7326, "distance": 0.0533331}, {"id": 1615, "distance": 0.0533331}, {"id": 7973, "distance": 0.0533335}, {"id": 13035, "distance": 0.0533335}, {"id": 4090, "distance": 0.0711112}, {"id": 5328, "distance": 0.0711112}, {"id": 12266, "distance": 0.0711112}, {"id": 3517, "distance": 0.0888885}, {"id": 14053, "distance": 0.0888885}, {"id": 2852, "distance": 0.0888888}, {"id": 8563, "distance": 0.0888891}]
+    }
+  ]
+}

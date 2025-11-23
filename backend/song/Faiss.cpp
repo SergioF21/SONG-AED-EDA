@@ -46,6 +46,37 @@ inline std::vector<std::string> split(const std::string &s, char delimiter) {
     return tokens;
 }
 
+// Helper para escribir JSON para el frontend
+void write_results_json(const char* filename, double time_seconds, int K, int num_queries, 
+                        const std::vector<int64_t>& ids, const std::vector<float>& dists) {
+    std::ofstream out(filename);
+    out << "{\n";
+    out << "  \"execution_time\": " << time_seconds << ",\n";
+    out << "  \"num_queries\": " << num_queries << ",\n";
+    out << "  \"k\": " << K << ",\n";
+    out << "  \"queries\": [\n";
+    
+    for (int q = 0; q < num_queries; ++q) {
+        out << "    {\n";
+        out << "      \"query_id\": " << q << ",\n";
+        out << "      \"results\": [";
+        for (int k = 0; k < K; ++k) {
+            int idx = ids[q * K + k];
+            float d = dists[q * K + k];
+            out << "{\"id\": " << idx << ", \"distance\": " << d << "}";
+            if (k < K - 1) out << ", ";
+        }
+        out << "]\n";
+        out << "    }" << (q < num_queries - 1 ? "," : "") << "\n";
+    }
+    out << "  ]\n";
+    out << "}\n";
+    out.close();
+    std::cout << "[JSON] Resultados guardados en " << filename << std::endl;
+}
+
+
+
 // Cargar archivo LibSVM
 inline Dataset load_libsvm_file(const std::string& filename, int dim) {
     std::cout << "[GraphBuilder] Cargando dataset: " << filename << "..." << std::endl;
@@ -157,67 +188,62 @@ inline void runGraphBuilder() {
     std::cout << "=== PROCESO DE CONSTRUCCION TERMINADO ===" << std::endl;
 }
 
-int main() {
-
-    
-    runGraphBuilder();
-
-    // data de graph_index_faiss.bin debería ser cargado aqui
-    
-    std::ifstream ds_file("dataset_faiss.bin", std::ios::binary);
+int main(int argc, char** argv) {
+    // Argumentos: ./faiss_demo dataset_faiss.bin <start_node> <num_queries> <K>
+    if (argc < 5) {
+        std::cerr << "Uso: " << argv[0] << " dataset_faiss.bin <start_node> <num_queries> <K>" << std::endl;
+        return 1;
+    }
+    std::string dataset_path = argv[1];
+    int start_node = std::atoi(argv[2]);
+    int num_queries = std::atoi(argv[3]);
+    int K = std::atoi(argv[4]);
+    if (num_queries < 1) num_queries = 1;
+    if (K < 1) K = 1;
+    // 1. Cargar Dataset (Lectura manual de binario)
+    std::ifstream ds_file(dataset_path, std::ios::binary);
     if (!ds_file.is_open()) {
-        std::cerr << "[ERROR] No se encontró dataset_faiss.bin" << std::endl;
+        std::cerr << "[ERROR] No se encontró " << dataset_path << std::endl;
         return 1;
     }
     int n_points_file, dim_file;
     ds_file.read(reinterpret_cast<char*>(&n_points_file), sizeof(int));
     ds_file.read(reinterpret_cast<char*>(&dim_file), sizeof(int));
-
+    // Usamos vector en lugar de new[] para manejo automático de memoria (RAII)
+    // Pero si prefieres new[], aquí está la lógica equivalente segura:
     float* data = new float[n_points_file * dim_file];
-    
     ds_file.read(reinterpret_cast<char*>(data), n_points_file * dim_file * sizeof(float));
     ds_file.close();
-
-    int n_queries = std::min(16, n_points_file);
-    float* query_vectors = new float[n_queries * dim_file];
-    for (int i = 0; i < n_queries * dim_file; i++)
-        query_vectors[i] = data[i];
-
-    for (int i = 0; i < n_queries * dim_file; i++)
-        query_vectors[i] = data[i]; // solo un ejemplo
-
-    faiss::IndexFlatL2 gt_index(dim_file);
-    
-    gt_index.add(n_points_file, data);
-
-    int K = DEGREE_LIMIT;
-    
-    std::vector<float> gt_dist(n_queries * K);
-
-    std::vector<faiss::idx_t> gt_ids(n_queries * K);
-
-    auto start = std::chrono::high_resolution_clock::now();
-
-    gt_index.search(n_queries, query_vectors, K, gt_dist.data(), gt_ids.data());
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> diff = end - start;
-
-    std::cout << "[INFO] Tiempo de búsqueda FAISS para " << n_queries << " consultas: " << diff.count() << " segundos." << std::endl;
-
-    for (int i = 0; i < n_queries; i++) {
-        std::cout << "Consulta " << i << " vecinos más cercanos:" << std::endl;
-        for (int k = 0; k < K; k++) {
-            int idx = i * K + k;
-            std::cout << "  ID: " << gt_ids[idx] << ", Distancia: " << std::fixed << std::setprecision(4) << gt_dist[idx] << std::endl;
+    // 2. Preparar Queries (Simuladas desde el mismo dataset)
+    if (start_node >= n_points_file) start_node = 0;
+    // Ajustar num_queries si se pasa del final
+    if (start_node + num_queries > n_points_file) num_queries = n_points_file - start_node;
+    float* query_vectors = new float[num_queries * dim_file];
+    for (int i = 0; i < num_queries; ++i) {
+        int point_idx = start_node + i;
+        for (int d = 0; d < dim_file; ++d) {
+            query_vectors[i * dim_file + d] = data[point_idx * dim_file + d];
         }
     }
-
+    std::cout << "Indexando " << n_points_file << " vectores de dimension " << dim_file << "..." << std::endl;
+    // 3. Construir Índice FAISS (Flat L2 = Brute Force Exacto)
+    faiss::IndexFlatL2 index(dim_file);
+    index.add(n_points_file, data);
+    // 4. Buscar
+    std::vector<float> D(num_queries * K);
+    std::vector<faiss::idx_t> I(num_queries * K);
+    std::cout << "Ejecutando busqueda FAISS (CPU Baseline)..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    index.search(num_queries, query_vectors, K, D.data(), I.data());
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    std::cout << "[INFO] Tiempo FAISS: " << diff.count() << " s" << std::endl;
+    // 5. Guardar JSON
+    write_results_json("frontend_results_faiss.json", diff.count(), K, num_queries, I, D);
+    // --- LIMPIEZA DE MEMORIA (IMPORTANTE) ---
     delete[] data;
     delete[] query_vectors;
-
-    std::cout << "[INFO] Búsqueda completada." << std::endl;
-
     return 0;
 }
