@@ -153,7 +153,7 @@ inline void build_and_save_graph_manual(const Dataset& ds, int K, const std::str
 inline void runGraphBuilder() {
     std::cout << "=== GENERADOR DE GRAFO (GraphBuilder) ===" << std::endl;
     
-    std::string input_file = "letter.scale.t"; 
+    std::string input_file = "letter.scale"; 
     int dim = 16;
     int K = 4; 
 

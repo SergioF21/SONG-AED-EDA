@@ -1,1 +1,8 @@
 *.pdf
+*.bin
+*.exe
+*.out
+*.o
+*.obj
+*.so
+*.dll
