@@ -12,20 +12,53 @@
 
 
 
-## Comandos de ejecución
+## Comandos de ejecución (Linux)
 
-Advertencia: Solo se puede ejecutar en Linux
+Nota: las instrucciones asumen que estás en un sistema Linux con CUDA (nvcc) instalado. Ajusta los comandos para Windows si es necesario.
 
-### backend
+Recomendado: ejecuta los comandos desde la raíz del proyecto:
+cd /home/sergio/Documents/EDA/Proyecto/SONG-AED-EDA
+
+1) Backend — compilar y generar ejecutables
+- Requisitos: nvcc (CUDA toolkit), g++.
+- Pasos:
+
+```bash
+# ir al directorio del backend
 cd backend/song
-g++ GraphBuilder.cpp -o GraphBuilder
-nvcc kernel.song.cu -o song
-g++ -std=c++17 -O2 -Wall Faiss.cpp -o faiss_demo -lfaiss -lpthread
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-### frontend
-cd frontend/ 
+# Compilar GraphBuilder (si tienes GraphBuilder.cpp)
+g++ -std=c++17 -O2 -Wall GraphBuilder.cpp -o GraphBuilder
+
+# Compilar kernel CUDA (archivo: kernel_song.cu)
+nvcc -std=c++14 kernel_song.cu -o song
+
+# (Opcional) Compilar demo con Faiss si tienes la librería instalada
+g++ -std=c++17 -O2 -Wall Faiss.cpp -o faiss_demo -lfaiss -lpthread
+
+# Si necesitas que el linker encuentre librerías instaladas en /usr/local/lib
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+```
+
+2) Frontend — entorno virtual y ejecutar Streamlit
+- Requisitos: python3, virtualenv (opcional pero recomendado).
+
+```bash
+# ir al frontend
+cd frontend
+
+# crear y activar entorno virtual
 python3 -m venv venv
 source venv/bin/activate
-pip3 install streamlit pandas plotly
+
+# instalar dependencias (opcional: crear requirements.txt)
+pip install streamlit pandas plotly
+
+# ejecutar la app
 streamlit run app.py
+```
+
+Notas rápidas:
+- Asegúrate de que EXECUTABLE_PATH en frontend/app.py apunte al ejecutable compilado (ej. ../backend/song/song o ruta absoluta).
+- Si hay errores al ejecutar el binary, revisa permisos (chmod +x song) y rutas relativas desde donde ejecutas Streamlit.
+- Para Windows, reemplaza `nvcc`/`g++` comandos por las herramientas equivalentes y ajusta rutas.
