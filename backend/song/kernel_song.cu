@@ -11,7 +11,7 @@
 #include <ctime>
 #include <chrono>
 
-#define DEGREE_LIMIT 4
+#define DEGREE_LIMIT 16
 #define HASH_SIZE 32
 #define QUEUE_SIZE 64
 #define THREADS_PER_BLOCK 128
@@ -302,24 +302,15 @@ __global__ void song_mega_kernel(
                 } else {
                     // revertir incremento y descartar candidato
                     atomicAdd(s_q_size, -1);
-                    // opcional: podrías intentar insertar en topk aun si Q overflow; omitimos.
-                    // Si hicimos inserción en topk, y hubo eviction, revertir topk? dejamos como está.
                     continue;
                 }
-/*
-                // Insertar en visited (si no estaba)
-                bool vinserted = visited_insert(s_visited, VISITED_SIZE, cand);
-                (void)vinserted;
-*/
+
                 // Si hubo evicted_node válido y distinto de -1, eliminarlo de visited.
                 // Esto mantiene la invariante visited ⊆ (Q ∪ topK).
                 if (evicted_node >= 0) {
-                    // intentamos remover; visited_remove usa atomicCAS así que es seguro.
                     visited_remove(s_visited, VISITED_SIZE, evicted_node);
                 }
-
-                // Incrementar contador de procesados
-                //atomicAdd(s_candidate_count, 1);
+                
             } // for candidates
         } // if thread 0
         __syncthreads();
