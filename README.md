@@ -52,7 +52,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # instalar dependencias (opcional: crear requirements.txt)
-pip install streamlit pandas plotly
+pip install streamlit pandas plotly matplotlib
 
 # ejecutar la app
 streamlit run app.py
